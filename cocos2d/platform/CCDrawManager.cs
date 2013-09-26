@@ -387,6 +387,8 @@ namespace Cocos2D
         {
             CCDrawManager.graphicsDevice = graphicsDevice;
 
+            InitBatchResources();
+
             spriteBatch = new SpriteBatch(graphicsDevice);
 
             m_defaultEffect = new BasicEffect(graphicsDevice);
@@ -464,6 +466,8 @@ namespace Cocos2D
             graphicsDevice.DeviceResetting += GraphicsDeviceDeviceResetting;
             graphicsDevice.ResourceCreated += GraphicsDeviceResourceCreated;
             graphicsDevice.ResourceDestroyed += GraphicsDeviceResourceDestroyed;
+
+            InitBatchResources();
         }
 
         public static void PurgeDrawManager()
@@ -1628,6 +1632,9 @@ namespace Cocos2D
 
         private static DrawCallInfo _currentDrawCall;
 
+        private static short[] _quadIndices;
+        private static short[] _linearindices;
+
         static void InitBatchResources()
         {
             //4MB and 2MB
@@ -1636,13 +1643,44 @@ namespace Cocos2D
 
         static void InitBatchResources(int vertextBufferSizeInBites, int indexBufferSizeInBytes)
         {
-            _vertexStride = Microsoft.Xna.Framework.Graphics.VertexPositionColorTexture.VertexDeclaration.VertexStride;
+            _vertexStride = VertexPositionColorTexture.VertexDeclaration.VertexStride;
 
             var bufferSize = vertextBufferSizeInBites / _vertexStride;
             var indexSize = indexBufferSizeInBytes / 2;
 
             _batchVertexBuffer = new CCVertexBuffer<Microsoft.Xna.Framework.Graphics.VertexPositionColorTexture>(bufferSize, BufferUsage.None);
             _batchIndexBuffer = new CCIndexBuffer<short>(indexSize, BufferUsage.None);
+
+            //Prepare Quad Indices
+            if (_quadIndices == null)
+            {
+                _quadIndices = new short[short.MaxValue];
+                int capacity = _quadIndices.Length / 6;
+
+                int i6 = 0;
+                int i4 = 0;
+
+                for (int i = 0; i < capacity; ++i)
+                {
+                    _quadIndices[i6 + 0] = (short) (i4 + 0);
+                    _quadIndices[i6 + 1] = (short) (i4 + 2);
+                    _quadIndices[i6 + 2] = (short) (i4 + 1);
+
+                    _quadIndices[i6 + 3] = (short) (i4 + 1);
+                    _quadIndices[i6 + 4] = (short) (i4 + 2);
+                    _quadIndices[i6 + 5] = (short) (i4 + 3);
+
+                    i6 += 6;
+                    i4 += 4;
+                }
+
+                //Prepare Linear Indices
+                _linearindices = new short[short.MaxValue];
+                for (short i = 0; i < _linearindices.Length; ++i)
+                {
+                    _linearindices[i] = i;
+                }
+            }
         }
 
         static void Reset()
